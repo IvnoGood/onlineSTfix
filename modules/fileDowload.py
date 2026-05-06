@@ -4,6 +4,8 @@ from selenium.webdriver.common.by import By
 import time
 import os
 
+from modules.logs_manager import add_log
+
 
 def download_file_selenium(gameUrl,
                            fixUrl,
@@ -26,20 +28,22 @@ def download_file_selenium(gameUrl,
     starting_files = os.listdir(save_path)
 
     if (gameUrl == "" or gameUrl == "None") or (fixUrl == "" or fixUrl == "None"):
-        print("Url not valid")
+        add_log(f"Url: {gameUrl}|{fixUrl} not valid", printable=False)
+        print("Couldn't download game")
         # return "URL-N-VAL"
 
     os.makedirs(save_path, exist_ok=True)
 
     if not os.path.exists(brave_path):
-        print(f"Brave not found at {brave_path}")
+        add_log(f"Brave not found at {brave_path}")
         # return "BRAVE-N-FOUND"
 
     brave_options = Options()
     brave_options.binary_location = brave_path
 
     if not os.path.exists(adBlockCRX):
-        print(f"Adblocker not found at {adBlockCRX}")
+        add_log(f"Adblocker not found at {adBlockCRX}", printable=False)
+        print("Couldn't download game try downlaoding the program again")
         # return "ADBLOCK-N-FOUND"
     brave_options.add_extension(adBlockCRX)
 
@@ -54,6 +58,7 @@ def download_file_selenium(gameUrl,
     try:
         driver = webdriver.Chrome(options=brave_options)
         driver.get(gameUrl)
+        add_log(f"Brave oppened to link: {gameUrl}", printable=False)
         try:
             driver.find_element(
                 By.XPATH, "//*[contains(text(), 'Скачать фикс с сервера')]").click()
@@ -66,11 +71,14 @@ def download_file_selenium(gameUrl,
         new_folder = os.listdir(save_path)
         fname = [file for file in new_folder if file not in starting_files]
         if len(fname) == 0:
-            print("Downlaoded file not found")
-            return
+            add_log(
+                f"Downloaded file not found all files: {new_folder}", printable=False)
+            print("Download failed try downloading the file again")
+            return False
+        add_log(f"Found file: {fname}", printable=False)
         fname = fname[0]
         driver.quit()
-        print(f"✓ Downloaded to {save_path}/{fname}")
+        add_log(f"✓ Downloaded to {save_path}/{fname}")
 
         with open(f"{save_path}/latest.txt", "a", encoding="utf-8") as log:
             log.write(f"{save_path}/{fname} | {gameTitle}\n")
@@ -78,11 +86,11 @@ def download_file_selenium(gameUrl,
         return f"{save_path}/{fname}"
 
     except Exception as e:
-        print(f"Error: {e}")
+        add_log(f"Error: {e}")
         if 'driver' in locals():
-            # driver.quit()
+            driver.quit()
             pass
-        return None
+        return False
 
 
 if __name__ == "__main__":

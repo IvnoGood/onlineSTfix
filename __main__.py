@@ -3,11 +3,13 @@ from pick import pick
 from colorama import init, Fore, Back, Style
 import os
 import sys
+import time
 
 from modules.fileDowload import download_file_selenium
 from modules.extract_rar import extract_rar
 from modules.applyFix import copy_fix
 from modules.preferences import load_preferences, save_preferences
+from modules.logs_manager import add_log
 
 from modules.SteamPath import preferences_SteamPath
 
@@ -27,12 +29,12 @@ def load_games(path):
 def show_search_filters():
 
     if not os.path.isdir("database"):
-        print("No database found. Read the README")
-        return
+        add_log("No database found. Read the README")
+        sys.exit()
     else:
         if not os.path.isdir("database/char") and not os.path.isdir("database/filters"):
-            print("Not all filters found. Read the README")
-            return
+            add_log("Not all filters found. Read the README")
+            sys.exit()
     title = "Choose a way to search your game"
     choices = ["By letter", "By type/tag", "Return"]
     option, index = pick(choices, title, indicator="→",  # quit_keys=('q', 'esc')
@@ -91,18 +93,26 @@ def show_game_details(option, gamelist):
                          )
     if option == "Download & Apply fix":
         print(Back.YELLOW + "WARNING! A browser window will apear. Don't touch it and let it work" + Style.RESET_ALL)
+        add_log("Using game: "+game[0])
         path = download_file_selenium(game[1], game[3], game[0])
-        apply_fix(game[0], path)
+        if path:
+            apply_fix(game[0], path)
+        else:
+            add_log("Fix was not downloaded correctly")
+            print("waiting 2sec for you to aknowledge this message")
+            time.sleep(2)
+            main()
     if option == "Exit":
         show_search_filters()
 
 
 def apply_fix(gameTitle, path):
-    print(f"Using {path} game as fix")
+    add_log(f"Using {path} game as fix")
     extract_path = extract_rar(path, gameTitle)
     # TODO: change to regular path
     if extract_path:
-        copy_fix(extract_path, gameTitle, user_preferences["steamPath"])
+        copy_fix(extract_path, gameTitle,
+                 f"{user_preferences["steamPath"]}/steamapps/common/")
 
 
 def main():
@@ -119,9 +129,10 @@ def main():
 
     # Initialize program
     init()
+    add_log("--- Starting program ---", printable=False)
 
     if "users_prefs.json" not in os.listdir():
-        print("No configuration file found initializing with empty one")
+        add_log("No configuration file found initializing with empty one")
         save_preferences()
     global user_preferences
     user_preferences = load_preferences()
@@ -134,27 +145,37 @@ def main():
     if index == 1:
         with open(f"{"downloads"}/latest.txt", "r", encoding="utf-8") as log:
             # ['downloads/TogetherMoonEscape_Fix_Repair_Steam_Generic.rar', 'Together Moon Escape по сети ']
-            if len(log.readlines()) != 0:
-                lastDownload = log.readlines()[0].strip("\n").split(" | ")
-                apply_fix(lastDownload[1], lastDownload[0])
-            else:
-                main()
+            try:
+                lines = log.readlines()
+                if len(lines) != 0:
+                    add_log(
+                        f"Using previusoly downloaded file: {lines[-1]}", printable=False)
+                    lastDownload = lines[-1].strip("\n").split(" | ")
+                    apply_fix(lastDownload[1], lastDownload[0])
+                else:
+                    main()
+            except IndexError:
+                add_log(
+                    "failed to fetch from latest.txt delete the file in the downloads folder and try again")
+                sys.exit()
 
     if index == 2:
+
         preferences_choices = [
             f"Steam Installation Path: {user_preferences["steamPath"]}",
             "Return"
         ]
-    preferences_title = "Choose any item to change it's value"
+        preferences_title = "Choose any item to change it's value"
 
-    preferences_option, preferences_index = pick(
-        preferences_choices, preferences_title, indicator="→")
+        preferences_option, preferences_index = pick(
+            preferences_choices, preferences_title, indicator="→")
 
-    if preferences_index == 0:
-        preferences_SteamPath(main, save_preferences)
-        user_preferences = load_preferences()
-    if preferences_option == "Return":
-        main()
+        if preferences_index == 0:
+            preferences_SteamPath(main, save_preferences)
+            user_preferences = load_preferences()
+        if preferences_option == "Return":
+            main()
+
     if index == 3:
         sys.exit()
 

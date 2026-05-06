@@ -3,6 +3,7 @@
 test/
 save/
 logs/
+downloads/
 users_prefs.json
 # Byte-compiled / optimized / DLL files
 __pycache__/
