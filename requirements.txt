@@ -1,0 +1,5 @@
+colorama
+pick
+rarfile
+selenium
+beautifulsoup4

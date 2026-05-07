@@ -3,3 +3,4 @@ downloads/DXM_Fix_Repair_Steam_V2_Generic.rar | DAEMON X MACHINA по сети
 downloads/F12016_Fix_Repair_Steam.rar | F1 2016 по сети
 downloads/DaggerDirective_Fix_Repair_Steam_Generic.rar | Dagger Directive по сети
 downloads/ASTRONEER_Fix_Repair_Steam_V5_Generic.rar | ASTRONEER по сети
+downloads/CafemartSimulator_Fix_Repair_Steam_Generic.rar | Cafemart Simulator по сети
