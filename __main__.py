@@ -129,7 +129,7 @@ def main():
 
     # Initialize program
     init()
-    add_log("--- Starting program ---", printable=False)
+    add_log("--- Starting program ---", printable=False, init=True)
 
     if "users_prefs.json" not in os.listdir():
         add_log("No configuration file found initializing with empty one")

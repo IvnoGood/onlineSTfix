@@ -2,7 +2,11 @@ import datetime
 import os
 
 
-def add_log(message, printable=True, showDate=False):
+def add_log(message, printable=True, showDate=False, init=False):
+    if init:
+        if "logs" not in os.listdir():
+            os.makedirs("logs")
+
     if printable and showDate:
         print(f"[{datetime.datetime.now()}] {message}")
     elif printable:
