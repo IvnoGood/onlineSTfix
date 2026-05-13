@@ -25,6 +25,9 @@ def download_file_selenium(gameUrl,
             seconds += 1
         return fname
 
+    if not os.path.exists(save_path):
+        os.makedirs(save_path)
+
     starting_files = os.listdir(save_path)
 
     if (gameUrl == "" or gameUrl == "None") or (fixUrl == "" or fixUrl == "None"):

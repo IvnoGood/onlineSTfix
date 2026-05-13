@@ -1,0 +1,125 @@
+{
+    "version": "auto-py-to-exe-configuration_v1",
+    "pyinstallerOptions": [
+        {
+            "optionDest": "noconfirm",
+            "value": true
+        },
+        {
+            "optionDest": "filenames",
+            "value": "C:/Users/IvnoGood/Documents/GitHub/onlineSTfix/__main__.py"
+        },
+        {
+            "optionDest": "onefile",
+            "value": true
+        },
+        {
+            "optionDest": "console",
+            "value": true
+        },
+        {
+            "optionDest": "clean",
+            "value": true
+        },
+        {
+            "optionDest": "noupx",
+            "value": true
+        },
+        {
+            "optionDest": "datas",
+            "value": "C:/Users/IvnoGood/Documents/GitHub/onlineSTfix/database;database/"
+        },
+        {
+            "optionDest": "datas",
+            "value": "C:/Users/IvnoGood/Documents/GitHub/onlineSTfix/modules;modules/"
+        },
+        {
+            "optionDest": "datas",
+            "value": "C:/Users/IvnoGood/Documents/GitHub/onlineSTfix/browser;browser/"
+        },
+        {
+            "optionDest": "hiddenimports",
+            "value": "colorama"
+        },
+        {
+            "optionDest": "hiddenimports",
+            "value": "pick"
+        },
+        {
+            "optionDest": "hiddenimports",
+            "value": "rarfile"
+        },
+        {
+            "optionDest": "hiddenimports",
+            "value": "selenium"
+        },
+        {
+            "optionDest": "hiddenimports",
+            "value": "selenium.webdriver"
+        },
+        {
+            "optionDest": "hiddenimports",
+            "value": "selenium.webdriver.chrome"
+        },
+        {
+            "optionDest": "hiddenimports",
+            "value": "selenium.webdriver.chrome.options"
+        },
+        {
+            "optionDest": "hiddenimports",
+            "value": "selenium.webdriver.chrome.service"
+        },
+        {
+            "optionDest": "hiddenimports",
+            "value": "selenium.webdriver.common.by"
+        },
+        {
+            "optionDest": "hiddenimports",
+            "value": "selenium.webdriver.support"
+        },
+        {
+            "optionDest": "hiddenimports",
+            "value": "selenium.webdriver.support.ui"
+        },
+        {
+            "optionDest": "hiddenimports",
+            "value": "beautifulsoup4"
+        },
+        {
+            "optionDest": "hiddenimports",
+            "value": "bs4"
+        },
+        {
+            "optionDest": "hiddenimports",
+            "value": "requests"
+        },
+        {
+            "optionDest": "hiddenimports",
+            "value": "urllib3"
+        },
+        {
+            "optionDest": "hiddenimports",
+            "value": "ttkbootstrap"
+        },
+        {
+            "optionDest": "hiddenimports",
+            "value": "PIL"
+        },
+        {
+            "optionDest": "hiddenimports",
+            "value": "csv"
+        },
+        {
+            "optionDest": "hiddenimports",
+            "value": "shutil"
+        },
+        {
+            "optionDest": "hiddenimports",
+            "value": "subprocess"
+        }
+    ],
+    "nonPyinstallerOptions": {
+        "increaseRecursionLimit": true,
+        "manualArguments": ""
+    }
+}

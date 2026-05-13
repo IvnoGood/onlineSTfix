@@ -3,3 +3,4 @@ pick
 rarfile
 selenium
 beautifulsoup4
+auto-py-to-exe
