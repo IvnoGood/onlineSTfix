@@ -4,6 +4,8 @@ from colorama import init, Fore, Back, Style
 import os
 import sys
 import time
+from supabase import create_client, Client, PostgrestAPIError
+from dotenv import load_dotenv
 
 from modules.fileDowload import download_file_selenium
 from modules.extract_rar import extract_rar
@@ -14,27 +16,56 @@ from modules.logs_manager import add_log
 from modules.SteamPath import preferences_SteamPath
 
 
-def load_games(path):
-    data = []
-    with open(path, "r", encoding="utf-8") as csvData:
-        i = 0
-        for lines in csv.reader(csvData):
-            if i != 0:
-                data.append(lines)
-            i += 1
-        csvData.close()
-    return data
+def load_games(option, index):
+    url: str = os.environ.get("SUPABASE_URL")
+    key: str = os.environ.get("SUPABASE_KEY")
+
+    supabase: Client = create_client(url, key)
+
+    if index == 0:
+        try:
+            response = (
+                supabase.table("games")
+                .select("*")
+                .like("title", f"{option}%")
+                .execute()
+            )
+            # print("\n".join([str(data) for data in sorted(response.data, key=lambda x: x["title"].lower())]))
+            add_log(
+                f"Found {len(response.data)+1} entries for {option}", printable=False)
+            return sorted(
+                response.data, key=lambda x: x["title"].lower())
+        except PostgrestAPIError as e:
+            add_log(f"Couldn't fetch data from database: {e.message}")
+            add_log(
+                f"Couldn't fetch data from database: {e}. Params: {option}/{index}", printable=False)
+    elif index == 1:
+        try:
+            response = (
+                supabase.table("games")
+                .select("*")
+                .text_search(
+                    "tag",
+                    f'"{option}"',
+                    options={"config": "english"},
+                )
+                .execute()
+            )
+            # print("\n".join([str(data) for data in sorted(response.data, key=lambda x: x["title"].lower())]))
+            add_log(
+                f"Found {len(response.data)+1} entries for {option}", printable=False)
+            return sorted(response.data, key=lambda x: x["title"].lower())
+
+        except PostgrestAPIError as e:
+            add_log(f"Couldn't fetch data from database: {e.message}")
+            add_log(
+                f"Couldn't fetch data from database: {e}. Params: {option}/{index}", printable=False)
+    else:
+        print("Not valid opt")
+        return
 
 
 def show_search_filters():
-
-    if not os.path.isdir("database"):
-        add_log("No database found. Read the README")
-        sys.exit()
-    else:
-        if not os.path.isdir("database/char") and not os.path.isdir("database/filters"):
-            add_log("Not all filters found. Read the README")
-            sys.exit()
     title = "Choose a way to search your game"
     choices = ["By letter", "By type/tag", "Return"]
     option, index = pick(choices, title, indicator="→",  # quit_keys=('q', 'esc')
@@ -42,24 +73,20 @@ def show_search_filters():
 
     if index == 0:
         letter_title = "Chose the starting letter of your game"
-        letter_choices = []
-        for file in os.listdir("database/char"):
-            if file.endswith(".csv"):
-                letter_choices.append(file[:-4])
-        option, index = pick(letter_choices, letter_title, indicator="→",  # quit_keys=('q', 'esc')
-                             )
-        data = load_games(f"database/char/{option+".csv"}")
+        letter_choices = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l',
+                          'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z']
+        option = pick(letter_choices, letter_title, indicator="→",  # quit_keys=('q', 'esc')
+                      )
+        data = load_games(option[0].upper(), index)
         show_list_games(data)
 
     if index == 1:
         tag_title = "Chose the filter of your game"
-        tag_choices = []
-        for file in os.listdir("database/filters"):
-            if file.endswith(".csv"):
-                tag_choices.append(file[:-4])
-        option, index = pick(tag_choices, tag_title, indicator="→",  # quit_keys=('q', 'esc')
-                             )
-        data = load_games(f"database/filters/{option+".csv"}")
+        tag_choices = ['adventures', 'arcade', 'fighting', 'horror', 'officialservers', 'puzzles',
+                       'racing', 'rpg', 'sandbox', 'shooter', 'simulator', 'strategy', 'survival', 'vr']
+        option = pick(tag_choices, tag_title, indicator="→",  # quit_keys=('q', 'esc')
+                      )
+        data = load_games(option[0], index)
         show_list_games(data)
     if index == 2:
         main()
@@ -68,7 +95,7 @@ def show_search_filters():
 def show_list_games(gamelist):
     gamePickTitle = "Choose a game to play"
     introChoices = [
-        f"{game[0]}" for game in gamelist]
+        f"{game["title"]}" for game in gamelist]
     introChoices.insert(0, "--- Return to search page ---")
     introChoices.insert(len(introChoices), "--- Return to search page ---")
     option, index = pick(introChoices, gamePickTitle, indicator="→",  # quit_keys=('q', 'esc')
@@ -81,10 +108,10 @@ def show_list_games(gamelist):
 
 
 def show_game_details(option, gamelist):
-    game = [game for game in gamelist if game[0] == option][0]
-    title = f"{game[0]}\n{game[2]}\n{game[1]}\n"
+    game = [game for game in gamelist if game["title"] == option][0]
+    title = f"{game["title"]}\n{game["tag"]}\n{game["link"]}\n"
     choices = ["Exit"]
-    if not game[3] == "None":
+    if not game["fixLink"] == "None":
         choices.append("Download & Apply fix")
     else:
         title += "No fix available at momment"
@@ -93,10 +120,11 @@ def show_game_details(option, gamelist):
                          )
     if option == "Download & Apply fix":
         print(Back.YELLOW + "WARNING! A browser window will apear. Don't touch it and let it work" + Style.RESET_ALL)
-        add_log("Using game: "+game[0])
-        path = download_file_selenium(game[1], game[3], game[0])
+        add_log("Using game: "+game["title"])
+        path = download_file_selenium(
+            game["link"], game["fixLink"], game["title"])
         if path:
-            apply_fix(game[0], path)
+            apply_fix(game["title"], path)
         else:
             add_log("Fix was not downloaded correctly")
             print("waiting 2sec for you to aknowledge this message")
@@ -131,6 +159,8 @@ def main():
     init()
     add_log("--- Starting program ---", printable=False, init=True)
 
+    load_dotenv()
+
     if "users_prefs.json" not in os.listdir():
         add_log("No configuration file found initializing with empty one")
         save_preferences()
@@ -143,6 +173,15 @@ def main():
     if index == 0:
         show_search_filters()
     if index == 1:
+        if not os.path.isdir(f"{"downloads"}"):
+            if not os.path.isfile(f"{"downloads"}/latest.txt"):
+                add_log(
+                    "Did not found latest.txt so no previously downloaded files", printable=False)
+                main()
+            add_log(
+                "Did not found latest.txt so no previously downloaded files", printable=False)
+            main()
+
         with open(f"{"downloads"}/latest.txt", "r", encoding="utf-8") as log:
             # ['downloads/TogetherMoonEscape_Fix_Repair_Steam_Generic.rar', 'Together Moon Escape по сети ']
             try:

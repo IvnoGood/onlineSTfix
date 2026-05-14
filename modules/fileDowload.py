@@ -5,13 +5,14 @@ import time
 import os
 
 from modules.logs_manager import add_log
+from modules.download_extension import downlaod_extension
 
 
 def download_file_selenium(gameUrl,
                            fixUrl,
                            gameTitle,
                            brave_path=r"C:\Program Files\BraveSoftware\Brave-Browser\Application\brave.exe",
-                           adBlockCRX=r"browser/uBlock-Origin-Lite-Chrome-Web-Store.crx",
+                           adBlockCRX=r"extensions/uBlock-Origin-Lite-Chrome-Web-Store.crx",
                            save_path="downloads"):
     def download_wait(path_to_downloads):
         seconds = 0
@@ -43,6 +44,10 @@ def download_file_selenium(gameUrl,
 
     brave_options = Options()
     brave_options.binary_location = brave_path
+
+    if not downlaod_extension(["https://github.com/IvnoGood/onlineSTfix/raw/refs/heads/main/extensions/uBlock-Origin-Lite-Chrome-Web-Store.crx",
+                               "uBlock-Origin-Lite-Chrome-Web-Store.crx"], "extensions"):
+        return False
 
     if not os.path.exists(adBlockCRX):
         add_log(f"Adblocker not found at {adBlockCRX}", printable=False)

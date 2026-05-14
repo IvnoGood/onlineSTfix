@@ -3,4 +3,7 @@ pick
 rarfile
 selenium
 beautifulsoup4
+python-dotenv
+supabase
 auto-py-to-exe
+requests

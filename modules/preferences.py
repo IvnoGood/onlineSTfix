@@ -2,7 +2,7 @@ import json
 
 
 def save_preferences(data={
-    "steamPath": r"C:\Program Files (x86)\Steam\steamapps\common"
+    "steamPath": r"C:\Program Files (x86)\Steam"
 }):
     with open("users_prefs.json", "w") as f:
         f.write(json.dumps(data, indent=True))

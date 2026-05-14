@@ -3,6 +3,7 @@ import shutil
 from modules.logs_manager import add_log
 from difflib import SequenceMatcher
 import sys
+import time
 
 
 def copy_fix(fixPath, gameName, steamPath=r"C:\Program Files (x86)\Steam"):
@@ -17,6 +18,7 @@ def copy_fix(fixPath, gameName, steamPath=r"C:\Program Files (x86)\Steam"):
     if len(values) == 0:
         add_log(
             f"Didn't find any game folder compatible are you sure you are in the right steam folder ?: [{steamPath}]")
+        time.sleep(4)
         return
     steam_game_name = sorted(values, key=lambda x: x[1], reverse=True)[0][0]
     add_log(
@@ -27,6 +29,8 @@ def copy_fix(fixPath, gameName, steamPath=r"C:\Program Files (x86)\Steam"):
 
     if response == "n":
         add_log("User said no to the install exiting program...")
+        print("If not happy with the steam folder change it in the preference menu")
+        time.sleep(4)
         sys.exit()
 
     shutil.copytree(
@@ -38,5 +42,5 @@ def copy_fix(fixPath, gameName, steamPath=r"C:\Program Files (x86)\Steam"):
 
 
 if __name__ == '__main__':
-    copy_fix("downloads/fixes/Last Man Sitting Online",
-             "ASTRONEER по сети", "D:\SteamLibrary\steamapps\common")
+    copy_fix(r"downloads/fixes/Last Man Sitting Online",
+             "ASTRONEER по сети", r"D:\SteamLibrary\steamapps\common")

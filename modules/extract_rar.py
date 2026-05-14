@@ -2,6 +2,7 @@ import subprocess
 import os
 import shutil
 from modules.logs_manager import add_log
+from modules.download_extension import downlaod_extension
 
 
 def extract_rar(rar_path, gameTitle, extract_path="downloads/fixes", password="online-fix.me"):
@@ -13,7 +14,10 @@ def extract_rar(rar_path, gameTitle, extract_path="downloads/fixes", password="o
         shutil.rmtree(path)
         return path
 
-    unrar_path = r"modules/UnRAR.exe"
+    if not downlaod_extension(["https://github.com/IvnoGood/onlineSTfix/raw/refs/heads/main/extensions/UnRAR.exe", "UnRAR.exe"], "extensions"):
+        return False
+
+    unrar_path = r"extensions/UnRAR.exe"
 
     try:
         with open(f"{path}/Patched using OnlineSTfix Website in the file.txt", "w") as f:
