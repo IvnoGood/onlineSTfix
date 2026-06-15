@@ -1,3 +1,6 @@
+import getpass
+from supabase import create_client, Client, PostgrestAPIError
+from dotenv import load_dotenv
 import argparse
 import csv
 import requests
@@ -6,8 +9,13 @@ import time
 import re
 from urllib.parse import urljoin
 import os
+
 from selenium import webdriver
+from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -269,100 +277,118 @@ class GameData:
             return None
 
 
+def check_new_games_supabase(links_list, supabase):
+    """Sync just links without extracting title/tag"""
+
+    batch_size = 100
+
+    for i in range(0, len(links_list), batch_size):
+        batch_links = links_list[i:i + batch_size]
+        try:
+            # Check existing
+            existing = supabase.table("games").select(
+                "link").in_("link", batch_links).execute()
+            existing_links = {x['link'] for x in existing.data}
+
+            # Filter new
+            new_links = [
+                link for link in batch_links if link not in existing_links]
+
+            """ if new_links:
+                # Insert just the links
+                new_games = [{"link": link} for link in new_links]
+                supabase.table("games").insert(new_games).execute()
+                added += len(new_games)
+                print(f"✓ Batch {i//batch_size + 1}: {len(new_games)} added") """
+
+        except Exception as e:
+            print(f"Error: {e}")
+    return new_links
+
+
 def main():
     parser = argparse.ArgumentParser(
         prog='ProgramName',
         description='What the program does',
         epilog='Text at the bottom of help')
 
-    parser.add_argument('-c', '--crawl', action='store_true')
-    parser.add_argument('-s', '--scrape')
-    parser.add_argument('-o', '--sort')
+    parser.add_argument('-c', '--crawl')
     args = parser.parse_args()
-    if args.crawl:
+
+    load_dotenv()
+
+    url: str = os.environ.get("SUPABASE_URL")
+    key: str = os.environ.get("SUPABASE_KEY")
+
+    email: str = os.environ.get("SUPABASE_AUTH_EMAIL")
+    password: str = os.environ.get("SUPABASE_AUTH_PASSWORD")
+
+    is_github_actions = os.getenv("GITHUB_ACTIONS") == "true"
+
+    supabase: Client = create_client(url, key)
+
+    if not email and not password:
+        print("Admin login necessary to update database")
+        email = input("Email: ")
+        password = getpass.getpass(prompt='Password: ')
+
+    response = supabase.auth.sign_in_with_password(
+        {
+            "email": email,
+            "password": password,
+        }
+    )
+
+    print("Logged in succesfully")
+
+    if not args.crawl:
         print("Starting crawl of website")
         crawler = GamesCrawler()
-        crawler.crawl_all_pages(delay=1.0, max_pages=None)
+        crawled_links = crawler.crawl_all_pages(delay=1.0, max_pages=None)
         crawler.print_links(limit=20)
-        crawler.save_links_to_file("game_links.txt")
-        # return crawler.all_game_links
+    else:
+        with open(args.crawl) as file:
+            crawled_links = file.read().splitlines()
 
-    if args.scrape:
-        print("Starting scrape of list")
-        driver = webdriver.Firefox()
-        driver.get("https://online-fix.me/")
-        cookie_string = "; ".join(
-            [f"{c['name']}={c['value']}" for c in driver.get_cookies()])
-        # print(cookie_string)
-        driver.quit()
-        game_data = GameData(cookie_string)
+    print("Starting scrape of list")
 
-        """  with open("game_fix.csv", mode='w', newline='', encoding="utf-8") as file:
-            writer = csv.writer(file)
-            writer.writerow(game_data.data.keys()) """
+    print("Getting cookies...")
 
-        with open(args.scrape, 'r') as allLinks:
-            nmbLines = 1837
-            for i, line in enumerate(allLinks):
-                game_data.get_data(line[:-1])
-                game_data.download_fix_file()
-                print(f"Scrapping {game_data.data["title"]}. {i}/{nmbLines}")
+    options = Options()
+    options.add_argument("--headless")
+    options.add_argument("--no-sandbox")
+    options.add_argument("--disable-dev-shm-usage")
+    options.add_argument("--disable-gpu")
+    options.add_argument("--width=1920")
+    options.add_argument("--height=1080")
 
-                with open("game_fix.csv", mode='a', newline='', encoding="utf-8") as file:
+    driver = webdriver.Firefox(options=options)
+
+    driver.get("https://online-fix.me/")
+    cookie_string = "; ".join(
+        [f"{c['name']}={c['value']}" for c in driver.get_cookies()])
+    # print(cookie_string)
+    driver.quit()
+
+    game_data = GameData(cookie_string)
+    new_games = check_new_games_supabase(crawled_links, supabase)
+    nmbLines = len(new_games)
+    print(f"New games found to crawl: {nmbLines}")
+    for i, line in enumerate(new_games):
+        game_data.get_data(line)
+        game_data.download_fix_file()
+        print(f"Scrapping {game_data.data["title"]}. {i+1}/{nmbLines}")
+
+        supabase.table("games").upsert(
+            game_data.data,
+            on_conflict="title"
+        ).execute()
+
+        print("Program finished correclty")
+        """ with open("game_fix.csv", mode='a', newline='', encoding="utf-8") as file:
                     writer = csv.writer(file)
                     writer.writerow(game_data.data.values())  # Write values
-                time.sleep(0.5)
-    if args.sort:
-        print("Starting sort of list")
-
-        with open(args.sort, 'r', encoding="utf-8") as f:
-            alphabet = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l',
-                        'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z']
-            data = [line for line in csv.reader(f)]
-            data = data[1:]
-            """
-            for letter in alphabet:
-                temp = []
-                for game in data:
-                    if game[0][0].lower() == letter:
-                        temp.append(game)
-                temp = sorted(temp, key=lambda x: x[0].lower())
-                with open(f"database/{letter}.csv", mode='w', newline='', encoding="utf-8") as file:
-                    writer = csv.writer(file)
-                    writer.writerow(["title", "link", "tag", "fixLink"])
-                    writer.writerows(temp)  # Write values
-                    file.close()
-            for game in data:
-                temp = []
-                if game[0][0].lower() not in alphabet:
-                    temp.append(game)
-                with open("database/char/special_characters.csv", "w", newline='', encoding="utf-8") as spe_char:
-                    writer = csv.writer(spe_char)
-                    writer.writerow(["title", "link", "tag", "fixLink"])
-                    writer.writerows(temp)
-                    spe_char.close()
-            print("Finished sorting by character")
-            """
-            filters = []
-            for game in data:
-                if game[2] not in filters:
-                    filters.append(game[2])
-            print("All found filters:", filters)
-
-            for filter in filters:
-                temp = []
-                for game in data:
-                    if game[2] == filter:
-                        temp.append(game)
-
-                    temp = sorted(temp, key=lambda x: x[0].lower())
-                    with open(f"database/filters/{filter}.csv", "w", newline='', encoding="utf-8") as filer_file:
-                        writer = csv.writer(filer_file)
-                        writer.writerow(["title", "link", "tag", "fixLink"])
-                        writer.writerows(temp)
-                        filer_file.close()
-            print(
-                "Finished sorting by filter type files can be found at the database folder")
+                time.sleep(0.5) """
 
 
 if __name__ == "__main__":

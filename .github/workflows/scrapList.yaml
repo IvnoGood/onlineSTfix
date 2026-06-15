@@ -1,0 +1,43 @@
+name: Scrape list
+
+on:
+  schedule:
+    - cron: '0 13 * * 1'
+  workflow_dispatch:
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Install Firefox and GeckoDriver
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y firefox firefox-geckodriver
+      
+      - name: Install Python dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+      
+      - name: Run scraper
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        run: python scrapLinks.py
+      
+      - name: Upload downloads
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: downloaded-files
+          path: downloads/
+          retention-days: 7
