@@ -120,7 +120,7 @@ def show_game_details(option, gamelist):
                          )
     if option == "Download & Apply fix":
         print(Back.YELLOW + "WARNING! A browser window will apear. Don't touch it and let it work" + Style.RESET_ALL)
-        add_log("Using game: "+game["title"])
+        add_log(f"Downlaoding game: {game["title"]} \n")
         path = download_file_selenium(
             game["link"], game["fixLink"], game["title"])
         if path:
@@ -164,11 +164,15 @@ def main():
     if "users_prefs.json" not in os.listdir():
         add_log("No configuration file found initializing with empty one")
         save_preferences()
+        index = 2
+        first = True
+    else:
+        introChoices = ["Game list",
+                        "Apply downloaded fix", "Preferences", "Exit"]
+        option, index = pick(introChoices, introTitle, indicator="→")
+
     global user_preferences
     user_preferences = load_preferences()
-
-    introChoices = ["Game list", "Apply downloaded fix", "Preferences", "Exit"]
-    option, index = pick(introChoices, introTitle, indicator="→")
 
     if index == 0:
         show_search_filters()
@@ -204,7 +208,10 @@ def main():
             f"Steam Installation Path: {user_preferences["steamPath"]}",
             "Return"
         ]
-        preferences_title = "Choose any item to change it's value"
+        if not first:
+            preferences_title = "Choose any item to change it's value"
+        else:
+            preferences_title = "Welcome to the program choose your preferences to start \nChoose any item to change it's value"
 
         preferences_option, preferences_index = pick(
             preferences_choices, preferences_title, indicator="→")

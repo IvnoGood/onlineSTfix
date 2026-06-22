@@ -1,7 +1,10 @@
 import os
 import requests
 
-from modules.logs_manager import add_log
+try:
+    from modules.logs_manager import add_log
+except ModuleNotFoundError:
+    from logs_manager import add_log
 
 
 def downlaod_extension(url, output):
